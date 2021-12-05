@@ -16,15 +16,15 @@ class Agent(object):
         # Complications: pickle should work with any machine learning models
         # However, this does not work with custom defined classes, due to the way pickle operates
         # TODO you can replace this with your own model
-        print(os.getcwd())
-        self.filename = 'yourteamname_files/trained_model_p1'
+        # print(os.getcwd())
+        self.filename = 'agents/yourteamname_files/trained_model_p1'
         self.trained_model = pickle.load(open(self.filename, 'rb'))
         
-        self.knn_test = pickle.load(open('data/knn_test_p1', 'rb'))
+        self.knn_test = pickle.load(open('agents/yourteamname_files/knn_test_p1', 'rb'))
         self.item0_embedding = pickle.load(open('data/item0embedding', 'rb'))
         self.item1_embedding = pickle.load(open('data/item1embedding', 'rb'))
-        self.test_covariates = pickle.load(open('data/test_covariate_compatible', 'rb'))
-        self.test_embeddings = pickle.load(open('data/test_noisy_embedding_compatible', 'rb'))
+        self.test_covariate = pickle.load(open('agents/yourteamname_files/test_covariate_compatible', 'rb'))
+        self.test_noisy_embedding = pickle.load(open('agents/yourteamname_files/test_noisy_embedding_compatible', 'rb'))
         self.test_covariate_with_index = self.test_covariate.reset_index()
         self.user_ids_of_users_with_embeddings = set(self.test_noisy_embedding.reset_index()['index'])
         self.covariates_of_test_users_with_vectors = self.test_covariate_with_index[self.test_covariate_with_index['index'].isin(self.user_ids_of_users_with_embeddings)]
@@ -64,7 +64,7 @@ class Agent(object):
     def action(self, obs):
         new_buyer_covariates, new_buyer_embedding, last_sale, profit_each_team = obs
         if new_buyer_embedding is None:
-            most_similar_user_id = self.knn_test.kneighbors(self.covariates_only_of_test_users_without_vectors.iloc[i].to_numpy().reshape(1,-1), 1, return_distance=False)
+            most_similar_user_id = self.knn_test.kneighbors(new_buyer_covariates.reshape(1,-1), 1, return_distance=False)
             most_similar_user = self.covariates_of_test_users_with_vectors.iloc[most_similar_user_id[0][0]]
             new_buyer_embedding = self.test_noisy_embedding.loc[most_similar_user['index']]
         
@@ -96,6 +96,6 @@ class Agent(object):
 
         self._process_last_sale(last_sale, profit_each_team)
         # return self.trained_model.predict(np.array([1, 2, 3]).reshape(1, -1))[0] + random.random()
-        return max_price_pair_for_test_individual
+        return [max_price_pair_for_test_individual[0] * 0.2, max_price_pair_for_test_individual[1] * 0.2]
         # TODO Currently this output is just a deterministic 2-d array, but the students are expected to use the buyer covariates to make a better prediction
         # and to use the history of prices from each team in order to create prices for each item.
