@@ -12,11 +12,6 @@ class Agent(object):
         self.opponent_number = 1 - agent_number  # index for opponent
         self.n_items = params["n_items"]
 
-        # Unpickle the trained model
-        # Complications: pickle should work with any machine learning models
-        # However, this does not work with custom defined classes, due to the way pickle operates
-        # TODO you can replace this with your own model
-        # print(os.getcwd())
         self.filename = 'agents/yourteamname_files/trained_model_p1'
         self.trained_model = pickle.load(open(self.filename, 'rb'))
         
@@ -33,6 +28,12 @@ class Agent(object):
 
         self.rounds = 0
         self.num_rounds_we_won = 0
+        self.price_diff_total_0 = 0
+        self.price_diff_count_0 = 0
+        self.price_diff_total_1 = 0
+        self.price_diff_count_1 = 0
+        self.price_diff_mean_0 = 0
+        self.price_diff_mean_1 = 0
 
     def _process_last_sale(self, last_sale, profit_each_team):
         # print("last_sale: ", last_sale)
@@ -48,6 +49,18 @@ class Agent(object):
         did_customer_buy_from_opponent = last_sale[1] == self.opponent_number
 
         which_item_customer_bought = last_sale[0]
+
+        if did_customer_buy_from_opponent:
+            price_diff = my_last_prices[which_item_customer_bought] - opponent_last_prices[which_item_customer_bought]
+            if which_item_customer_bought == 0:
+                self.price_diff_count_0 += 1
+                self.price_diff_total_0 += price_diff
+                self.price_diff_mean_0 = self.price_diff_total_0 / self.price_diff_count_0
+            else:
+                self.price_diff_count_1 += 1
+                self.price_diff_total_1 += price_diff
+                self.price_diff_mean_1 = self.price_diff_total_1 / self.price_diff_count_1
+        
 
         if did_customer_buy_from_me:
             self.num_rounds_we_won += 1
@@ -106,6 +119,5 @@ class Agent(object):
         # return self.trained_model.predict(np.array([1, 2, 3]).reshape(1, -1))[0] + random.random()
 
         alpha = 1 if self.rounds < 10 else float(self.num_rounds_we_won) / float(self.rounds)
-        return [max_price_pair_for_test_individual[0], max_price_pair_for_test_individual[1]]
-        # TODO Currently this output is just a deterministic 2-d array, but the students are expected to use the buyer covariates to make a better prediction
-        # and to use the history of prices from each team in order to create prices for each item.
+        return [max_price_pair_for_test_individual[0] * alpha, max_price_pair_for_test_individual[1] * alpha]
+        # return [0.001, 0.001]
