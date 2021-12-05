@@ -12,22 +12,21 @@ class Agent(object):
         self.opponent_number = 1 - agent_number  # index for opponent
         self.n_items = params["n_items"]
 
-        self.filename = 'agents/yourteamname_files/trained_model_p1'
+        self.filename = 'agents/teamrocket_files/trained_model_p1'
         self.trained_model = pickle.load(open(self.filename, 'rb'))
         
-        self.knn_test = pickle.load(open('agents/yourteamname_files/knn_test_p1', 'rb'))
         self.item0_embedding = pickle.load(open('data/item0embedding', 'rb'))
         self.item1_embedding = pickle.load(open('data/item1embedding', 'rb'))
-        self.test_covariate = pickle.load(open('agents/yourteamname_files/test_covariate_compatible', 'rb'))
-        self.test_noisy_embedding = pickle.load(open('agents/yourteamname_files/test_noisy_embedding_compatible', 'rb'))
+
+        self.knn_test = pickle.load(open('agents/teamrocket_files/knn_test_p1', 'rb'))
+        self.test_covariate = pickle.load(open('agents/teamrocket_files/test_covariate_compatible', 'rb'))
+        self.test_noisy_embedding = pickle.load(open('agents/teamrocket_files/test_noisy_embedding_compatible', 'rb'))
         self.test_covariate_with_index = self.test_covariate.reset_index()
         self.user_ids_of_users_with_embeddings = set(self.test_noisy_embedding.reset_index()['index'])
         self.covariates_of_test_users_with_vectors = self.test_covariate_with_index[self.test_covariate_with_index['index'].isin(self.user_ids_of_users_with_embeddings)]
         self.covariates_of_test_users_without_vectors = self.test_covariate_with_index[~self.test_covariate_with_index['index'].isin(self.user_ids_of_users_with_embeddings)]
         self.covariates_only_of_test_users_without_vectors = self.covariates_of_test_users_without_vectors.drop('index', axis=1)
 
-        # self.rounds = 0
-        # self.num_rounds_we_won = 0
 
         self.alpha = 1
         self.latest_winner = 0 # 0 for opp win, 1 for we win
@@ -36,7 +35,6 @@ class Agent(object):
     def _process_last_sale(self, last_sale, profit_each_team):
         # print("last_sale: ", last_sale)
         # print("profit_each_team: ", profit_each_team)
-        # self.rounds += 1
         my_current_profit = profit_each_team[self.this_agent_number]
         opponent_current_profit = profit_each_team[self.opponent_number]
 
@@ -100,7 +98,7 @@ class Agent(object):
         item0_dotproduct = np.dot(new_buyer_embedding, self.item0_embedding)
         item1_dotproduct = np.dot(new_buyer_embedding, self.item1_embedding)
         
-        item0_max_price = 2.2222207173210085    
+        item0_max_price = 2.2222207173210085 # values from max_price in training set from part 1   
         item1_max_price = 3.9996456192290166
         item0_prices = np.linspace(0,item0_max_price,1000)
         item1_prices = np.linspace(0,item1_max_price,1000)
@@ -122,7 +120,5 @@ class Agent(object):
                 max_revenue_for_test_individual = expected_revenue_for_price_pair
                 max_price_pair_for_test_individual = price_pair
 
-
-        # alpha = 1 if self.rounds < 10 else float(self.num_rounds_we_won) / float(self.rounds)
         return [max_price_pair_for_test_individual[0] * self.alpha, max_price_pair_for_test_individual[1] * self.alpha]
-        # return [0.001, 0.001]
+
