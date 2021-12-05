@@ -26,8 +26,8 @@ class Agent(object):
         self.covariates_of_test_users_without_vectors = self.test_covariate_with_index[~self.test_covariate_with_index['index'].isin(self.user_ids_of_users_with_embeddings)]
         self.covariates_only_of_test_users_without_vectors = self.covariates_of_test_users_without_vectors.drop('index', axis=1)
 
-        self.rounds = 0
-        self.num_rounds_we_won = 0
+        # self.rounds = 0
+        # self.num_rounds_we_won = 0
 
         self.alpha = 1
         self.latest_winner = 0 # 0 for opp win, 1 for we win
@@ -36,7 +36,7 @@ class Agent(object):
     def _process_last_sale(self, last_sale, profit_each_team):
         # print("last_sale: ", last_sale)
         # print("profit_each_team: ", profit_each_team)
-        self.rounds += 1
+        # self.rounds += 1
         my_current_profit = profit_each_team[self.this_agent_number]
         opponent_current_profit = profit_each_team[self.opponent_number]
 
@@ -61,7 +61,6 @@ class Agent(object):
         
         # winning case, raise prices/alpha
         if did_customer_buy_from_me:
-            # self.num_rounds_we_won += 1
             if self.latest_winner == 1: 
                 self.current_streak += 1
             else:
@@ -70,6 +69,11 @@ class Agent(object):
             price_diff = opponent_last_prices[which_item_customer_bought] - my_last_prices[which_item_customer_bought]
             price_diff_percentage = price_diff / my_last_prices[which_item_customer_bought] # how much % i should increase to match
             self.alpha = self.alpha * ( (1 + (price_diff_percentage - 0.05)) ** self.current_streak) # increase prices/alpha by (diff - 5)%, -1 is anticipating opp drop
+        
+        # customer bought from no one, drop alpha slightly in case prices are too high in general due to diff distribution of customers
+        if ~did_customer_buy_from_me and ~did_customer_buy_from_opponent: 
+            self.latest_winner = -1
+            self.alpha = self.alpha * 0.95
 
         # print("My current profit: ", my_current_profit)
         # print("Opponent current profit: ", opponent_current_profit)
@@ -117,7 +121,6 @@ class Agent(object):
             if expected_revenue_for_price_pair > max_revenue_for_test_individual:
                 max_revenue_for_test_individual = expected_revenue_for_price_pair
                 max_price_pair_for_test_individual = price_pair
-
 
 
         # alpha = 1 if self.rounds < 10 else float(self.num_rounds_we_won) / float(self.rounds)
