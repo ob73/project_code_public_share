@@ -31,9 +31,13 @@ class Agent(object):
         self.covariates_of_test_users_without_vectors = self.test_covariate_with_index[~self.test_covariate_with_index['index'].isin(self.user_ids_of_users_with_embeddings)]
         self.covariates_only_of_test_users_without_vectors = self.covariates_of_test_users_without_vectors.drop('index', axis=1)
 
+        self.rounds = 0
+        self.num_rounds_we_won = 0
+
     def _process_last_sale(self, last_sale, profit_each_team):
         # print("last_sale: ", last_sale)
         # print("profit_each_team: ", profit_each_team)
+        self.rounds += 1
         my_current_profit = profit_each_team[self.this_agent_number]
         opponent_current_profit = profit_each_team[self.opponent_number]
 
@@ -44,6 +48,9 @@ class Agent(object):
         did_customer_buy_from_opponent = last_sale[1] == self.opponent_number
 
         which_item_customer_bought = last_sale[0]
+
+        if did_customer_buy_from_me:
+            self.num_rounds_we_won += 1
 
         # print("My current profit: ", my_current_profit)
         # print("Opponent current profit: ", opponent_current_profit)
@@ -63,6 +70,7 @@ class Agent(object):
     # Returns an action: a list of length n_items=2, indicating prices this agent is posting for each item.
     def action(self, obs):
         new_buyer_covariates, new_buyer_embedding, last_sale, profit_each_team = obs
+        self._process_last_sale(last_sale, profit_each_team)
         if new_buyer_embedding is None:
             most_similar_user_id = self.knn_test.kneighbors(new_buyer_covariates.reshape(1,-1), 1, return_distance=False)
             most_similar_user = self.covariates_of_test_users_with_vectors.iloc[most_similar_user_id[0][0]]
@@ -94,8 +102,10 @@ class Agent(object):
                 max_price_pair_for_test_individual = price_pair
 
 
-        self._process_last_sale(last_sale, profit_each_team)
+
         # return self.trained_model.predict(np.array([1, 2, 3]).reshape(1, -1))[0] + random.random()
-        return [max_price_pair_for_test_individual[0] * 0.2, max_price_pair_for_test_individual[1] * 0.2]
+
+        alpha = 1 if self.rounds < 10 else float(self.num_rounds_we_won) / float(self.rounds)
+        return [max_price_pair_for_test_individual[0], max_price_pair_for_test_individual[1]]
         # TODO Currently this output is just a deterministic 2-d array, but the students are expected to use the buyer covariates to make a better prediction
         # and to use the history of prices from each team in order to create prices for each item.
